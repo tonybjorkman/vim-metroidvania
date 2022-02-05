@@ -33,5 +33,4 @@ class spritesheet(object):
         for y in range(image_count[1]):
             rect[1] = ypos+y*rect[3]
             images.append(self.load_strip(rect,image_count[0],colorkey))
-        pass
         return images            
