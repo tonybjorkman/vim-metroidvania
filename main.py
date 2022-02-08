@@ -44,9 +44,9 @@ class Player:
 
 class SpriteSheet:
 
-    def __init__(self,file,tilepxsize,numitems) -> None:
+    def __init__(self,file,tilepxsize,numitems,spacing=0,alpha=-1) -> None:
         self.sheet = spritesheet.spritesheet(file)
-        self.images = self.sheet.load_matrix([0, 0, tilepxsize[0], tilepxsize[1]],numitems, -1)
+        self.images = self.sheet.load_matrix([0, 1, tilepxsize[0], tilepxsize[1]],numitems,alpha,0)
 
     def get_char(self, char):
         code = ord(char)
@@ -69,26 +69,59 @@ class SpriteSheet:
         return self.images[index[1]][index[0]]
 
 class Map:
-    def __init__(self,pixsize) -> None:
-        self.size = tuple((np.array(pixsize)/20).astype(int))
-        self.map = np.chararray(self.size)
-        self.map[:] = ''
-        for x in range(self.size[0]):
-            for y in range(self.size[1]):
-                if random.random() > 0.7:
-                    #self.map[x,y] = chr(random.randrange(32,100))
-                    self.map[x,y] = random.choice(self.char_set())
 
+    def __init__(self,size):
+        self.resize(size[0],size[1])
+        self.scroll = 0
+    
+    def resize(self, width, height):
+        self.map = np.chararray((width,height))
+        self.map[:] = ' '
+
+    #load strings from file and load into chararray 
+    def load_map(self,file):
+        lines = []
+        with open(file) as f:
+            for line in f:
+                lines.append(line) 
+        
+        # find the longest line
+        max_len = 0
+        for line in lines:
+            if len(line) > max_len:
+                max_len = len(line)
 
     def char_set(self):
         chrlist = ['i','u','n','e','d','w','b','o','y','p','d','G','$','*','^']
         return chrlist     
 
-    def draw(self, screen, sprites):
-        for x in range(self.size[0]):
-            for y in range(self.size[1]):
-                screen.blit(sprites.get_char_image(self.map[x][y]),(x*20,y*20))
+    def spawn_random_map(self, density=0.1):
+        #self.resize(width, height)
+        for x in range(self.map.shape[0]):
+            for y in range(self.map.shape[1]):
+                if random.random() < density/4:
+                    self.map[x][y] = random.choice(self.char_set())
+                elif random.random() < density:
+                    self.map[x][y] = '#'
+                else:
+                    self.map[x][y] = ' '
 
+        self.scroll = 0
+
+class TileScreen:
+    def __init__(self,pixsize,map) -> None:
+        self.size = tuple((np.array(pixsize)/20).astype(int))
+        self.map = map 
+
+    def draw_visible_map(self, screen, sprites):
+        for x in range(self.size[0]+self.map.scroll):
+            for y in range(self.size[1]):
+                screen.blit(sprites.get_char_image(self.get_map_char(x,y)),(x*20,y*20))
+
+    def get_map_char(self,x,y):
+        if x < 0 or y < 0 or x >= self.size[0] or y >= self.size[1]:
+            return ' '
+        return self.map.map[x][y]
 
 
 pygame.init()
@@ -97,6 +130,8 @@ pass
 
 # define the colours
 white = (255, 255, 255)
+
+calpha = (101, 32, 91, 255)
 red = (255, 0, 0)
 green = (0, 255, 0)
 blue = (0, 0, 255)
@@ -105,16 +140,16 @@ black = (0, 0, 0)
 # set the Dimensions
 width = 420 
 height = 240
-
-m = Map((width,height))
+map = Map((24,12))
+map.spawn_random_map()
+m = TileScreen((width,height),map)
 # size of a block
 
 # set Screen
 screen = pygame.display.set_mode((width, height))
 
-ss = SpriteSheet('fonts.png',(20, 20),(15,8))
+ss = SpriteSheet('fonts.png',(20, 20),(15,8),alpha=calpha)
 player_sprites = SpriteSheet('player.png',(32,64),(10,10))
-# Sprite is 16x16 pixels at location 0,0 in the file...
 
 images = player_sprites.images
 player = Player(images)
@@ -123,18 +158,6 @@ player = Player(images)
 
 # set caption
 pygame.display.set_caption("CORONA SCARPER")
-#font = pygame.font.SysFont('DejaVuSansMono', 32)
-#text = font.render('GeeksForGeeks', True, white, black)
-# load the image
-# text surface object
-#textRect = text.get_rect()
- 
-# set the center of the rectangular object.
-#textRect.center = (height // 2, width // 2)
-    # copying the text surface object
-    # to the display surface object
-    # at the center coordinate.
-#screen.blit(text, textRect)
 pygame.display.update()
 
 # set icon
@@ -142,11 +165,11 @@ running = True
 
 while running:
     # set the image on screen object
-
+    screen.fill(black)
     screen.blit(ss.get_char_image('x'), (50, 50))
     screen.blit(ss.get_char_image('h'), (70, 50))
     screen.blit(ss.get_char_image(')'), (90, 50))
-    m.draw(screen, ss)
+    m.draw_visible_map(screen, ss)
     # loop through all events
     for event in pygame.event.get():
             

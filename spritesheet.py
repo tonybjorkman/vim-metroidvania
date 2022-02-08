@@ -20,17 +20,17 @@ class spritesheet(object):
         "Loads multiple images, supply a list of coordinates" 
         return [self.image_at(rect, colorkey) for rect in rects]
     # Load a whole strip of images
-    def load_strip(self, rect, image_count, colorkey = None):
+    def load_strip(self, rect, image_count, colorkey,spacing):
         "Loads a strip of images and returns them as a list"
-        tups = [(rect[0]+rect[2]*x, rect[1], rect[2], rect[3])
+        tups = [(rect[0]+rect[2]*x, rect[1], rect[2], rect[3]-spacing)
                 for x in range(image_count)]
         return self.images_at(tups, colorkey)
 
-    def load_matrix(self,rect, image_count, colorkey = None):
+    def load_matrix(self,rect, image_count, colorkey = None,spacing = 0):
         "Loads a strip of images and returns them as a list"
         images = []
         ypos = rect[1]
         for y in range(image_count[1]):
             rect[1] = ypos+y*rect[3]
-            images.append(self.load_strip(rect,image_count[0],colorkey))
+            images.append(self.load_strip(rect,image_count[0],colorkey,spacing))
         return images            
