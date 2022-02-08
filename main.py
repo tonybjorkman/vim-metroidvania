@@ -8,17 +8,23 @@ import numpy as np
 class Player:
 
     def __init__(self, fonts):
-        self.x = 0
+        self.x = 350
         self.y = 0
         self.sprites = fonts
         self.sprite_x = 0
         self.sprite_y = 0
         self.sprite = None
         self.update_sprite()
+        self.direction = 1
      
     def move(self, x, y):
         self.x += x
         self.y += y
+        if x>0 and self.direction == 0:
+            self.direction = 1
+        elif x<0 and self.direction == 1:
+            self.direction = 0
+
         self.move_sprite_wrap_x(1)
 
     def update_sprite(self):
@@ -86,10 +92,21 @@ class Map:
                 lines.append(line) 
         
         # find the longest line
-        max_len = 0
+        max_width = 0
         for line in lines:
-            if len(line) > max_len:
-                max_len = len(line)
+            if len(line) > max_width:
+                max_width = len(line)
+        height = len(lines)
+
+        # resize the map
+        self.resize(max_width, height)
+        # load the map into the chararray
+        for y in range(height):
+            for x in range(max_width):
+                if x < len(lines[y]):
+                    self.map[x][y] = lines[y][x]
+                else:
+                    self.map[x][y] = ' '
 
     def char_set(self):
         chrlist = ['i','u','n','e','d','w','b','o','y','p','d','G','$','*','^']
@@ -109,23 +126,40 @@ class Map:
         self.scroll = 0
 
 class TileScreen:
-    def __init__(self,pixsize,map) -> None:
-        self.size = tuple((np.array(pixsize)/20).astype(int))
+    def __init__(self,pixsize,map,tilesize=20) -> None:
+        self.pixsize = pixsize
+        self.tilesize = tilesize
+        self.size = tuple((np.array(pixsize)/tilesize).astype(int))
         self.map = map 
+        self.scroll = 0
 
     def draw_visible_map(self, screen, sprites):
-        for x in range(self.size[0]+self.map.scroll):
-            for y in range(self.size[1]):
-                screen.blit(sprites.get_char_image(self.get_map_char(x,y)),(x*20,y*20))
+        tile_scroll = math.ceil(self.scroll/self.tilesize)
+        for scrn_x,x in enumerate(range(tile_scroll,self.size[0]+1+tile_scroll)):
+            for scrn_y,y in enumerate(range(self.size[1])):
+                screen.blit(sprites.get_char_image(self.get_map_char(x,y)),(scrn_x*20,scrn_y*20))
+
+    def update_scroll(self, player_xpos, player_dir):
+        padding=32
+        leftborder = self.scroll + padding
+        rightborder = self.pixsize[0] - padding
+        print("scroll:"+str(self.scroll) + "player:"+str(player_xpos))
+        if player_dir == 1 and player_xpos > rightborder:
+            self.scroll = player_xpos - rightborder
+        elif player_dir == 0 and player_xpos < leftborder:
+            self.scroll = player_xpos - padding
+ 
 
     def get_map_char(self,x,y):
-        if x < 0 or y < 0 or x >= self.size[0] or y >= self.size[1]:
+        if x < 0 or y < 0 or x >= self.map.map.shape[0] or y >= self.map.map.shape[1]:
             return ' '
         return self.map.map[x][y]
 
 
-pygame.init()
+        
 
+pygame.init()
+pygame.key.set_repeat(1,100)
 pass
 
 # define the colours
@@ -141,20 +175,19 @@ black = (0, 0, 0)
 width = 420 
 height = 240
 map = Map((24,12))
-map.spawn_random_map()
-m = TileScreen((width,height),map)
+map.load_map('map.txt')
+#map.spawn_random_map()
+tile_screen = TileScreen((width,height),map)
 # size of a block
 
 # set Screen
 screen = pygame.display.set_mode((width, height))
 
-ss = SpriteSheet('fonts.png',(20, 20),(15,8),alpha=calpha)
+font_sprites = SpriteSheet('fonts.png',(20, 20),(15,8),alpha=calpha)
 player_sprites = SpriteSheet('player.png',(32,64),(10,10))
 
 images = player_sprites.images
 player = Player(images)
-
-
 
 # set caption
 pygame.display.set_caption("CORONA SCARPER")
@@ -166,10 +199,10 @@ running = True
 while running:
     # set the image on screen object
     screen.fill(black)
-    screen.blit(ss.get_char_image('x'), (50, 50))
-    screen.blit(ss.get_char_image('h'), (70, 50))
-    screen.blit(ss.get_char_image(')'), (90, 50))
-    m.draw_visible_map(screen, ss)
+    screen.blit(font_sprites.get_char_image('x'), (50, 50))
+    screen.blit(font_sprites.get_char_image('h'), (70, 50))
+    screen.blit(font_sprites.get_char_image(')'), (90, 50))
+    tile_screen.draw_visible_map(screen, font_sprites)
     # loop through all events
     for event in pygame.event.get():
             
@@ -183,20 +216,24 @@ while running:
 
             if event.key == pygame.K_RIGHT:
                 player.move(4,0)
+                
 
             if event.key == pygame.K_LEFT:
                 player.move(-4,0)
+
 
             if event.key == pygame.K_UP:
                 player.move(0,-4)
             
             if event.key == pygame.K_DOWN:
                 player.move(0,4)
+            
+            tile_screen.update_scroll(player.x,player.direction)
 
         if event.type == pygame.KEYUP:
 
             if event.key == pygame.K_RIGHT or pygame.K_LEFT:
                 pass
 
-        screen.blit(player.sprite, (player.x, player.y))
+        screen.blit(player.sprite, (player.x - tile_screen.scroll, player.y))
         pygame.display.update()    
