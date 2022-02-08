@@ -19,6 +19,7 @@ class Player:
     def move(self, x, y):
         self.x += x
         self.y += y
+        self.move_sprite_wrap_x(1)
 
     def update_sprite(self):
         self.sprite = self.sprites[self.sprite_y][self.sprite_x]
@@ -41,11 +42,11 @@ class Player:
         self.update_sprite()
     
 
-class FontSpriteSheet:
+class SpriteSheet:
 
-    def __init__(self) -> None:
-        self.sheet = spritesheet.spritesheet('fonts.png')
-        self.images = self.sheet.load_matrix([0, 0, 20, 20],(15,8), -1)
+    def __init__(self,file,tilepxsize,numitems) -> None:
+        self.sheet = spritesheet.spritesheet(file)
+        self.images = self.sheet.load_matrix([0, 0, tilepxsize[0], tilepxsize[1]],numitems, -1)
 
     def get_char(self, char):
         code = ord(char)
@@ -111,10 +112,11 @@ m = Map((width,height))
 # set Screen
 screen = pygame.display.set_mode((width, height))
 
-ss = FontSpriteSheet()
+ss = SpriteSheet('fonts.png',(20, 20),(15,8))
+player_sprites = SpriteSheet('player.png',(32,64),(10,10))
 # Sprite is 16x16 pixels at location 0,0 in the file...
 
-images = ss.images
+images = player_sprites.images
 player = Player(images)
 
 
@@ -157,16 +159,16 @@ while running:
         if event.type == pygame.KEYDOWN:
 
             if event.key == pygame.K_RIGHT:
-                player.move_sprite_wrap_x(1)
+                player.move(4,0)
 
             if event.key == pygame.K_LEFT:
-                player.move_sprite_wrap_x(-1)
+                player.move(-4,0)
 
             if event.key == pygame.K_UP:
-                player.move_sprite_wrap_y(-1)
+                player.move(0,-4)
             
             if event.key == pygame.K_DOWN:
-                player.move_sprite_wrap_y(1)
+                player.move(0,4)
 
         if event.type == pygame.KEYUP:
 

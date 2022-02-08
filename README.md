@@ -23,6 +23,9 @@ Killing ASCII characters and words(the monsters) while collecting loot from them
 
 Arrows - change char in spritesheet for debug
 
+# Resources 
+https://opengameart.org/content/mv-platformer-weapon-set-animated
+
 # Ideas
 
 Copy player such that you now control two entities equally and when you send 
