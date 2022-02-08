@@ -2,6 +2,8 @@ import pygame
 import random
 import spritesheet
 import math
+import numpy as np
+
 
 class Player:
 
@@ -53,6 +55,8 @@ class FontSpriteSheet:
     
     # convert between ascii and font sprite
     def ascii_to_index(self, ascii):
+        if ascii == '':
+            ascii = ' '
         a = ord(ascii)
         index = self.get_char(ascii) - 32
         y = math.floor(index/15)
@@ -64,19 +68,30 @@ class FontSpriteSheet:
         return self.images[index[1]][index[0]]
 
 class Map:
-    def __init__(self) -> None:
-        self.map = [[chr(32+i+(x*15)) for i in range(15)] for x in range(8)] 
+    def __init__(self,pixsize) -> None:
+        self.size = tuple((np.array(pixsize)/20).astype(int))
+        self.map = np.chararray(self.size)
+        self.map[:] = ''
+        for x in range(self.size[0]):
+            for y in range(self.size[1]):
+                if random.random() > 0.7:
+                    #self.map[x,y] = chr(random.randrange(32,100))
+                    self.map[x,y] = random.choice(self.char_set())
+
+
+    def char_set(self):
+        chrlist = ['i','u','n','e','d','w','b','o','y','p','d','G','$','*','^']
+        return chrlist     
 
     def draw(self, screen, sprites):
-        for y in range(8):
-            for x in range(15):
-                screen.blit(sprites.get_char_image(self.map[y][x]),(x*20,y*20))
+        for x in range(self.size[0]):
+            for y in range(self.size[1]):
+                screen.blit(sprites.get_char_image(self.map[x][y]),(x*20,y*20))
 
 
 
 pygame.init()
 
-m = Map()
 pass
 
 # define the colours
@@ -87,11 +102,11 @@ blue = (0, 0, 255)
 black = (0, 0, 0)
 
 # set the Dimensions
-width = 300 
-height = 400
+width = 420 
+height = 240
 
+m = Map((width,height))
 # size of a block
-pixel = 64
 
 # set Screen
 screen = pygame.display.set_mode((width, height))
@@ -109,7 +124,6 @@ pygame.display.set_caption("CORONA SCARPER")
 #font = pygame.font.SysFont('DejaVuSansMono', 32)
 #text = font.render('GeeksForGeeks', True, white, black)
 # load the image
-gameIcon = pygame.image.load("car.jpg")# create a rectangular object for the
 # text surface object
 #textRect = text.get_rect()
  
@@ -122,13 +136,10 @@ gameIcon = pygame.image.load("car.jpg")# create a rectangular object for the
 pygame.display.update()
 
 # set icon
-pygame.display.set_icon(gameIcon)
-backgroundImg = pygame.image.load("back.jpg")
 running = True
 
 while running:
     # set the image on screen object
-    screen.blit(backgroundImg, (0, 0))
 
     screen.blit(ss.get_char_image('x'), (50, 50))
     screen.blit(ss.get_char_image('h'), (70, 50))

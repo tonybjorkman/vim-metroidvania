@@ -22,3 +22,8 @@ Killing ASCII characters and words(the monsters) while collecting loot from them
 # Controls so far during debug and development.
 
 Arrows - change char in spritesheet for debug
+
+# Ideas
+
+Copy player such that you now control two entities equally and when you send 
+commands, both entities responds to it and it will use twice the ammo.
