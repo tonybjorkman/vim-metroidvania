@@ -14,8 +14,8 @@ class Player:
         self.sprite_x = 0
         self.sprite_y = 0
         self.sprite = None
-        self.update_sprite()
         self.direction = 1
+        self.update_sprite()
      
     def move(self, x, y):
         self.x += x
@@ -28,7 +28,10 @@ class Player:
         self.move_sprite_wrap_x(1)
 
     def update_sprite(self):
-        self.sprite = self.sprites[self.sprite_y][self.sprite_x]
+        img = self.sprites[self.sprite_y][self.sprite_x]
+        if self.direction == 0:
+            img = pygame.transform.flip(img,True,False) 
+        self.sprite = img 
 
     #wraparound for sprites
     def move_sprite_wrap_x(self, num):
@@ -91,16 +94,14 @@ class Map:
             for line in f:
                 lines.append(line) 
         
-        # find the longest line
+        # size
         max_width = 0
         for line in lines:
             if len(line) > max_width:
                 max_width = len(line)
         height = len(lines)
-
-        # resize the map
         self.resize(max_width, height)
-        # load the map into the chararray
+
         for y in range(height):
             for x in range(max_width):
                 if x < len(lines[y]):
@@ -142,10 +143,10 @@ class TileScreen:
     def update_scroll(self, player_xpos, player_dir):
         padding=32
         leftborder = self.scroll + padding
-        rightborder = self.pixsize[0] - padding
-        print("scroll:"+str(self.scroll) + "player:"+str(player_xpos))
+        rightborder = self.scroll + self.pixsize[0] - padding
+        #print("scroll:"+str(self.scroll) + "player:"+str(player_xpos))
         if player_dir == 1 and player_xpos > rightborder:
-            self.scroll = player_xpos - rightborder
+            self.scroll += player_xpos - rightborder 
         elif player_dir == 0 and player_xpos < leftborder:
             self.scroll = player_xpos - padding
  
@@ -159,7 +160,7 @@ class TileScreen:
         
 
 pygame.init()
-pygame.key.set_repeat(1,100)
+pygame.key.set_repeat(1,50)
 pass
 
 # define the colours
