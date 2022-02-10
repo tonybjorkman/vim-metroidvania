@@ -27,7 +27,7 @@ class spritesheet(object):
         return self.images_at(tups, colorkey)
 
     def load_matrix(self,rect, image_count, colorkey = None,spacing = 0):
-        "Loads a strip of images and returns them as a list"
+        "Loads a multiple strips of images and returns them as a list"
         images = []
         ypos = rect[1]
         for y in range(image_count[1]):

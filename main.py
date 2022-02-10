@@ -10,31 +10,35 @@ class Player(sprite.Sprite):
 
     def __init__(self, fonts):
         sprite.Sprite.__init__(self)
-        self.rect = pygame.Rect(350,0,32,64)
+        self.rect = pygame.Rect(350,0,18,50)
         self.dx = 0
         self.dy = 0
         self.sprites = fonts
         self.sprite_x = 0
         self.sprite_y = 0
         self.image = None
+        self.image_xoffset = 6
         self.direction = 1
         self.update_sprite()
      
-    def move(self, x, y):
+    def pre_move(self, x, y):
         self.dx += x
         self.dy += y
         if self.dx>0 and self.direction == 0:
             self.direction = 1
         elif self.dx<0 and self.direction == 1:
             self.direction = 0
-
         self.move_sprite_wrap_x(1)
-
-
-
-        # move the player
         self.rect.x += self.dx
         self.rect.y += self.dy
+
+    def cancel_move(self):
+        self.rect.x -= self.dx
+        self.rect.y -= self.dy
+        self.dx = 0
+        self.dy = 0
+
+    def commit_move(self):
         self.dx = 0
         self.dy = 0
 
@@ -64,9 +68,9 @@ class Player(sprite.Sprite):
 
 class SpriteSheet:
 
-    def __init__(self,file,tilepxsize,numitems,spacing=0,alpha=-1) -> None:
+    def __init__(self,file,tilepxsize,numitems,offset=(0,1),spacing=0,alpha=-1) -> None:
         self.sheet = spritesheet.spritesheet(file)
-        self.images = self.sheet.load_matrix([0, 1, tilepxsize[0], tilepxsize[1]],numitems,alpha,0)
+        self.images = self.sheet.load_matrix([offset[0], offset[1], tilepxsize[0], tilepxsize[1]],numitems,alpha,0)
 
     def get_char(self, char):
         code = ord(char)
@@ -161,7 +165,7 @@ class Map:
         chars = []
         for x in range(self.map.shape[0]):
             for y in range(self.map.shape[1]):
-                if self.map[x][y].type == char:
+                if self.map[x][y].type in char:
                     chars.append(self.map[x][y])
         return chars
 
@@ -201,6 +205,7 @@ pygame.key.set_repeat(1,50)
 
 # define the colours
 white = (255, 255, 255)
+red = (255, 0, 0)
 calpha = (101, 32, 91, 255)
 black = (0, 0, 0)
 
@@ -213,8 +218,8 @@ height = 240
 # set Screen
 screen = pygame.display.set_mode((width, height))
 
-font_sprites = SpriteSheet('fonts.png',(20, 20),(15,8),alpha=calpha)
-player_sprites = SpriteSheet('player.png',(32,64),(10,10))
+font_sprites = SpriteSheet('fonts.png',(20, 20),(15,8),(0,1),alpha=calpha)
+player_sprites = SpriteSheet('player.png',(32,50),(10,10),(0,15))
 map = MapFactory().create_char_map('map.txt',font_sprites)
 #map.spawn_random_map()
 tile_screen = TileScreen((width,height),map)
@@ -222,7 +227,7 @@ images = player_sprites.images
 player = Player(images)
 
 wgroup = pygame.sprite.Group()
-ws = map.get_chars_from_map('w')
+ws = map.get_chars_from_map([chr(x) for x in range(33,120)])
 wgroup.add(ws)
 # set caption
 pygame.display.set_caption("Vim Game")
@@ -251,31 +256,34 @@ while running:
         if event.type == pygame.KEYDOWN:
 
             if event.key == pygame.K_RIGHT:
-                player.move(4,0)
+                player.pre_move(4,0)
                 
 
             if event.key == pygame.K_LEFT:
-                player.move(-4,0)
+                player.pre_move(-4,0)
 
 
             if event.key == pygame.K_UP:
-                player.move(0,-4)
+                player.pre_move(0,-4)
             
             if event.key == pygame.K_DOWN:
-                player.move(0,4)
+                player.pre_move(0,4)
             
             tile_screen.update_scroll(player.rect.x,player.direction)
             #check collision
-            if pygame.sprite.spritecollideany(player,wgroup):
-                print("collision")
-                
+            collider = pygame.sprite.spritecollideany(player, wgroup)
+            if collider:
+                player.cancel_move()
+                print("collision with " + collider.type)
+            else:
+                player.commit_move()
 
         if event.type == pygame.KEYUP:
 
             if event.key == pygame.K_RIGHT or pygame.K_LEFT:
                 pass
         
-        
-
-        screen.blit(player.image, (player.rect.x - tile_screen.scroll, player.rect.y))
+        #draw rectangle
+        pygame.draw.rect(screen, red, (player.rect.x - tile_screen.scroll, player.rect.y, player.rect.width, player.rect.height),1)
+        screen.blit(player.image, (player.rect.x - tile_screen.scroll - player.image_xoffset, player.rect.y))
         pygame.display.update()    
