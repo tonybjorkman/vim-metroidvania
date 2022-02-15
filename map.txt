@@ -6,7 +6,7 @@ first row
 Look Suraj!  
 
 This is a map from a
-file..
-
-
-12th row       going fooorward and forward it does
+file..           roof
+               wall        cdel
+               wall        abcl           wall
+12th row       going fooowwwwww and forward it does

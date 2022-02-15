@@ -11,6 +11,8 @@ class Player(sprite.Sprite):
     def __init__(self, fonts):
         sprite.Sprite.__init__(self)
         self.rect = pygame.Rect(350,0,18,50)
+        self.speed_y =0
+        self.speed_x = 0
         self.dx = 0
         self.dy = 0
         self.sprites = fonts
@@ -18,33 +20,29 @@ class Player(sprite.Sprite):
         self.sprite_y = 0
         self.image = None
         self.image_xoffset = 6
-        self.direction = 1
-        self.update_sprite()
+        self.update_sprite_direction(1)
+        self.on_ground = False
+        self.run_active = False        
      
-    def pre_move(self, x, y):
-        self.dx += x
-        self.dy += y
-        if self.dx>0 and self.direction == 0:
-            self.direction = 1
-        elif self.dx<0 and self.direction == 1:
-            self.direction = 0
-        self.move_sprite_wrap_x(1)
-        self.rect.x += self.dx
-        self.rect.y += self.dy
+    
+    
+    def run(self, direction):
+        print("run direction: ", direction)
+        if self.on_ground and self.speed_x < 3 and direction == 1:
+            self.speed_x += 1 * direction
+        elif self.on_ground and self.speed_x > -3 and direction == -1:
+            self.speed_x += 1 * direction
+        elif not self.on_ground and self.speed_x < 3 and direction == 1:
+            self.speed_x += 0.5 * direction
+        elif not self.on_ground and self.speed_x > -3 and direction == -1:
+            self.speed_x += 0.5 * direction
 
-    def cancel_move(self):
-        self.rect.x -= self.dx
-        self.rect.y -= self.dy
-        self.dx = 0
-        self.dy = 0
+        player.run_active = True        
+        self.move_sprite_wrap_x(direction)
 
-    def commit_move(self):
-        self.dx = 0
-        self.dy = 0
-
-    def update_sprite(self):
+    def update_sprite_direction(self,dir):
         img = self.sprites[self.sprite_y][self.sprite_x]
-        if self.direction == 0:
+        if dir == -1:
             img = pygame.transform.flip(img,True,False) 
         self.image = img 
 
@@ -55,7 +53,7 @@ class Player(sprite.Sprite):
             self.sprite_x = 6
         if self.sprite_x > 6:
             self.sprite_x = 1
-        self.update_sprite()
+        self.update_sprite_direction(num)
     
     def move_sprite_wrap_y(self, num):
         self.sprite_y += num
@@ -63,8 +61,115 @@ class Player(sprite.Sprite):
             self.sprite_y = len(self.sprites)-1
         if self.sprite_y > len(self.sprites)-1:
             self.sprite_y = 0
-        self.update_sprite()
+        self.update_sprite_direction(num)
     
+    def jump(self):
+        if self.on_ground:
+            print("jumped on grouund")
+            self.speed_y = -10
+    
+
+
+
+class WorldUtility:
+
+    def gravity(self, player, objects):
+        if player.speed_y < 5:
+            player.speed_y += 1
+    
+    def friction(self,player):
+        if not player.run_active and player.on_ground:
+            player.speed_x = 0
+        
+
+    def run_full_frame(self, player, objects):
+        #apply world speeds
+        current_move = [0,0]
+        #print (player.speed_x)
+        self.gravity(player, objects)
+        self.friction(player)
+        self.friction(player)
+        player.dx += round(player.speed_x)
+        player.dy += round(player.speed_y)
+
+
+        dir_x = -1 if player.dx < 0 else 1
+        dir_y = -1 if player.dy < 0 else 1
+        player.on_ground = False
+        while (player.dx != 0 or player.dy != 0):
+            
+            if abs(player.dx) > 1:
+                current_move[0] = 1*dir_x
+                player.dx -= 1*dir_x
+            elif abs(player.dx) <= 1 and player.dx != 0:
+                current_move[0] = player.dx
+                player.dx = 0
+
+            player.rect.x += current_move[0]
+            if pygame.sprite.spritecollideany(player, objects):
+                player.rect.x -= current_move[0]
+                player.speed_x = 0
+                player.dx = 0
+                current_move[0] = 0
+
+            if abs(player.dy) > 1:
+                current_move[1] = 1*dir_y
+                player.dy -= 1*dir_y
+            elif abs(player.dy) <= 1 and player.dy != 0: 
+                current_move[1] = player.dy
+                player.dy = 0 
+
+            player.rect.y += current_move[1]
+            if pygame.sprite.spritecollideany(player, objects):
+                player.rect.y -= current_move[1]
+                player.speed_y = 0
+                player.dy = 0
+                if current_move[1] > 0:
+                    player.on_ground = True
+                current_move[1] = 0
+        
+
+        player.run_active = False
+        
+
+    def collision_detection(self, player, objects):
+        #check collision
+
+        on_ground = False 
+
+        collider = pygame.sprite.spritecollide(player, objects,dokill=False)
+        for obj in collider:                        
+            #object is below player
+            print("collision with " + obj.type)
+
+            if player.rect.bottom >= obj.rect.top and player.rect.bottomright[0] > obj.rect.topleft[0]:
+                #player.rect.bottom = obj.rect.top 
+                if player.speed_y > 0:
+                    player.speed_y = 0
+                on_ground = True
+                #decrease player speed
+                if player.speed_x > 0:
+                    player.speed_x -= 0.5
+                elif player.speed_x < 0:    
+                    player.speed_x += 0.5
+                print ("on ground")
+            #object is above player
+            elif False and player.rect.y < obj.rect.bottom:
+                player.rect.top = obj.rect.bottom
+                player.speed_y = 0
+            #object is to the right of player   
+            elif player.rect.right >= obj.rect.left:   
+                print("right")
+                player.rect.right = obj.rect.left
+                if player.speed_x > 0:
+                    player.speed_x = 0
+            #object is to the left of player
+            elif False and player.rect.x + player.rect.width < obj.rect.x:
+                player.rect.left = obj.rect.right
+                player.speed_x = 0
+
+        player.on_ground = on_ground
+
 
 class SpriteSheet:
 
@@ -184,14 +289,14 @@ class TileScreen:
             for y in range(map.map.shape[1]):
                 screen.blit(map.map[x][y].image,(x*self.tilesize-self.scroll,y*self.tilesize))
 
-    def update_scroll(self, player_xpos, player_dir):
+    def update_scroll(self, player_xpos ):
         padding=32
         leftborder = self.scroll + padding
         rightborder = self.scroll + self.pixsize[0] - padding
         #print("scroll:"+str(self.scroll) + "player:"+str(player_xpos))
-        if player_dir == 1 and player_xpos > rightborder:
+        if player_xpos > rightborder:
             self.scroll += player_xpos - rightborder 
-        elif player_dir == 0 and player_xpos < leftborder:
+        elif player_xpos < leftborder:
             self.scroll = player_xpos - padding
  
 
@@ -233,10 +338,14 @@ wgroup.add(ws)
 pygame.display.set_caption("Vim Game")
 pygame.display.update()
 
+world = WorldUtility()
+
 # set icon
 running = True
 
 while running:
+    clock = pygame.time.Clock()
+    clock.tick(20)
     # set the image on screen object
     screen.fill(black)
     colliding_x = font_sprites.get_char_image('x')
@@ -245,45 +354,45 @@ while running:
     screen.blit(font_sprites.get_char_image(')'), (90, 50))
     tile_screen.draw_visible_map(screen, map)
     # loop through all events
+    #TODO: CHange into using python.key.pressed
+    # https://stackoverflow.com/questions/37121511/can-i-press-two-keys-simultaneously-for-a-single-event-using-pygame/37126399#37126399
+    
+    key = pygame.key.get_pressed()
+    movement_released = True
+    # check the quit condition
+
+    # movement key control of player
+
+    if key[pygame.K_RIGHT]:
+        player.run(1)
+        print("right")
+        movement_released = False
+        
+
+    if key[pygame.K_LEFT]:
+        player.run(-1)
+        print("left")
+        movement_released = False
+
+
+    if key[pygame.K_UP]:
+        player.jump()
+    
     for event in pygame.event.get():
-            
-        # check the quit condition
-        if event.type == pygame.QUIT:
-            # quit the game
+        if event.type == pygame.QUIT
             pygame.quit()
 
-        # movement key control of player
-        if event.type == pygame.KEYDOWN:
+    try:
+       pygame.event.pump()
+    except:
+        #fail silently if game is closed
+        pass
 
-            if event.key == pygame.K_RIGHT:
-                player.pre_move(4,0)
-                
-
-            if event.key == pygame.K_LEFT:
-                player.pre_move(-4,0)
-
-
-            if event.key == pygame.K_UP:
-                player.pre_move(0,-4)
-            
-            if event.key == pygame.K_DOWN:
-                player.pre_move(0,4)
-            
-            tile_screen.update_scroll(player.rect.x,player.direction)
-            #check collision
-            collider = pygame.sprite.spritecollideany(player, wgroup)
-            if collider:
-                player.cancel_move()
-                print("collision with " + collider.type)
-            else:
-                player.commit_move()
-
-        if event.type == pygame.KEYUP:
-
-            if event.key == pygame.K_RIGHT or pygame.K_LEFT:
-                pass
-        
-        #draw rectangle
-        pygame.draw.rect(screen, red, (player.rect.x - tile_screen.scroll, player.rect.y, player.rect.width, player.rect.height),1)
-        screen.blit(player.image, (player.rect.x - tile_screen.scroll - player.image_xoffset, player.rect.y))
-        pygame.display.update()    
+    tile_screen.update_scroll(player.rect.x)
+    world.run_full_frame(player,wgroup)
+    
+    pygame.display.set_caption("Vim Game:"+str(player.on_ground))
+    #draw rectangle
+    pygame.draw.rect(screen, red, (player.rect.x - tile_screen.scroll, player.rect.y, player.rect.width, player.rect.height),1)
+    screen.blit(player.image, (player.rect.x - tile_screen.scroll - player.image_xoffset, player.rect.y))
+    pygame.display.update()    
