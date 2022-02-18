@@ -33,9 +33,9 @@ class Player(sprite.Sprite):
         elif self.on_ground and self.speed_x > -3 and direction == -1:
             self.speed_x += 1 * direction
         elif not self.on_ground and self.speed_x < 3 and direction == 1:
-            self.speed_x += 0.5 * direction
+            self.speed_x += 1 * direction
         elif not self.on_ground and self.speed_x > -3 and direction == -1:
-            self.speed_x += 0.5 * direction
+            self.speed_x += 1 * direction
 
         player.run_active = True        
         self.move_sprite_wrap_x(direction)
@@ -202,7 +202,7 @@ class MapFactory:
         pass    
     
     def create_char_map(self,file,spritesheet):
-        map = Map((1,1))
+        map = ASCIIMap((1,1))
         map.load_map(file)
         #iterate through map and create sprites
         obj_array = np.empty((map.map.shape[0],map.map.shape[1]),dtype=Character)
@@ -214,9 +214,10 @@ class MapFactory:
         map.map = obj_array
         return map
 
+class ObjectMap:
+    ''' ObjectMap is the  '''
 
-
-class Map:
+class ASCIIMap:
 
     def __init__(self,size):
         self.resize(size[0],size[1])
@@ -348,14 +349,9 @@ while running:
     clock.tick(20)
     # set the image on screen object
     screen.fill(black)
-    colliding_x = font_sprites.get_char_image('x')
-    screen.blit(colliding_x, (50, 50))
-    screen.blit(font_sprites.get_char_image('h'), (70, 50))
-    screen.blit(font_sprites.get_char_image(')'), (90, 50))
+    screen.blit(font_sprites.get_char_image('X'), (90, 50))
     tile_screen.draw_visible_map(screen, map)
     # loop through all events
-    #TODO: CHange into using python.key.pressed
-    # https://stackoverflow.com/questions/37121511/can-i-press-two-keys-simultaneously-for-a-single-event-using-pygame/37126399#37126399
     
     key = pygame.key.get_pressed()
     movement_released = True
@@ -365,21 +361,17 @@ while running:
 
     if key[pygame.K_RIGHT]:
         player.run(1)
-        print("right")
         movement_released = False
-        
 
     if key[pygame.K_LEFT]:
         player.run(-1)
-        print("left")
         movement_released = False
-
 
     if key[pygame.K_UP]:
         player.jump()
     
     for event in pygame.event.get():
-        if event.type == pygame.QUIT
+        if event.type == pygame.QUIT:
             pygame.quit()
 
     try:

@@ -26,7 +26,21 @@ Arrows - change char in spritesheet for debug
 # Resources 
 https://opengameart.org/content/mv-platformer-weapon-set-animated
 
-# Ideas
+# random thoughts / vim movement playground.
 
-Copy player such that you now control two entities equally and when you send 
-commands, both entities responds to it and it will use twice the ammo.
+Different mana is required for allowing to type different chars.
+
+Liero style hook with hook aim using vim movement, hooked char is comparable to cursor. Player position is separate.
+copy physics of liero.
+
+Player needs to select, delete, copy, paste, pure movement of player, goto row to complete levels.
+
+Vim characters may be found in air-drops and retrieved by moving player over them and pressing x. So a level might require you
+to first discover what needs to be done to reach goal, lets say delete a line that blocks further access to map, and then copy/past another line
+to have a bridge over a gap but before that is done, one needs to collect the appropriate vim commands by navigating through the map with the hook. 
+
+levels can be small and made in such a way that it requires using a specific set of commands quickly. Can have timelimits on maps, other maps can have used vim command limit. 
+
+As the player unlocks more vim commands it can finish levels that was previously to difficult or even impossible.
+
+
